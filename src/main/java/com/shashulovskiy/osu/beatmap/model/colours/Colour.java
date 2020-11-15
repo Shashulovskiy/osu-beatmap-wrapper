@@ -1,37 +1,19 @@
 package com.shashulovskiy.osu.beatmap.model.colours;
 
+import lombok.*;
+
+@Data
 public class Colour {
     private Integer red;
     private Integer green;
     private Integer blue;
 
-    public Colour(Integer red, Integer green, Integer blue) {
-        this.red = red;
-        this.green = green;
-        this.blue = blue;
-    }
-
-    public Integer getRed() {
-        return red;
-    }
-
-    public void setRed(Integer red) {
-        this.red = red;
-    }
-
-    public Integer getGreen() {
-        return green;
-    }
-
-    public void setGreen(Integer green) {
-        this.green = green;
-    }
-
-    public Integer getBlue() {
-        return blue;
-    }
-
-    public void setBlue(Integer blue) {
-        this.blue = blue;
+    public static Colour parseColour(String line) {
+        String[] split = line.split(",");
+        Colour colour = new Colour();
+        colour.setRed(Integer.parseInt(split[0]));
+        colour.setGreen(Integer.parseInt(split[1]));
+        colour.setBlue(Integer.parseInt(split[2]));
+        return colour;
     }
 }

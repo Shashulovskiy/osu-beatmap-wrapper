@@ -12,12 +12,12 @@ import lombok.Data;
 
 @Data
 public class Beatmap {
-    private General generalProperties;
-    private Editor editorProperties;
-    private Metadata metadataProperties;
-    private Difficulty difficultyProperties;
-    private Events events;
-    private TimingPoints timingPoints;
-    private Colours colours;
-    private HitObjects hitObjects;
+    private final General generalProperties = new General();
+    private final Editor editorProperties = new Editor();
+    private final Metadata metadataProperties = new Metadata();
+    private final Difficulty difficultyProperties = new Difficulty();
+    private final Events events = new Events();
+    private final TimingPoints timingPoints = new TimingPoints();
+    private final Colours colours = new Colours();
+    private final HitObjects hitObjects = new HitObjects();
 }

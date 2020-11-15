@@ -8,6 +8,7 @@ import java.util.List;
 public abstract class HitObject {
     private Integer x;
     private Integer y;
+    private Integer time;
     private Integer type;
     private Integer hitSound;
     // TODO properly implement hitSamples

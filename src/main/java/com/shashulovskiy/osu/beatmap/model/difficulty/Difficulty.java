@@ -4,10 +4,10 @@ import lombok.Data;
 
 @Data
 public class Difficulty {
-    private Long hPDrainRate;
-    private Long circleSize;
-    private Long overallDifficulty;
-    private Long approachRate;
-    private Long sliderMultiplier;
-    private Long sliderTickRate;
+    private Double HPDrainRate;
+    private Double circleSize;
+    private Double overallDifficulty;
+    private Double approachRate;
+    private Double sliderMultiplier;
+    private Double sliderTickRate;
 }
