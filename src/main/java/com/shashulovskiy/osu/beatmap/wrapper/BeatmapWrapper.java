@@ -43,9 +43,12 @@ public class BeatmapWrapper {
         String line;
         String sectionName = "";
         while ((line = br.readLine()) != null) {
+//            Every section starts with "[SECTION_NAME]"
+//            Remember the the current section, which is being parsed and set fields accordingly
             if (line.startsWith("[")) {
                 sectionName = line.trim().substring(1, line.length() - 1);
             } else {
+                // Comments and empty lines are ignored
                 if (!sectionName.equals("") && !line.isEmpty() && !line.startsWith("//")) parseSection(sectionName, line);
             }
         }
@@ -101,6 +104,8 @@ public class BeatmapWrapper {
     }
 
     private void parseEvents(String line) throws ReflectiveOperationException {
+        // Event type is given by the first number in a comma-separated list
+        // Take that out and parse the rest of the list with an according parser
         int index = line.indexOf(",");
         String key = line.substring(0, index);
         String value = line.substring(index + 1);
@@ -117,6 +122,9 @@ public class BeatmapWrapper {
     }
 
     private void parseColours(String line) throws ReflectiveOperationException {
+        // Colours section contains either one of the combo colours or
+        // SliderTrackOverride/SliderBorder values in key: value format,
+        // which have their own parsers
         if (line.startsWith("Combo")) {
             parseSection(beatmap.getColours(), Colours.class, "Combo", line.split(":")[1].trim());
         } else {
@@ -125,6 +133,11 @@ public class BeatmapWrapper {
     }
 
     private void parseHitObjects(String line) throws ReflectiveOperationException {
+        // Hit onject type is given by one of the bytes in the type integer value
+        // 0 - HitCircle
+        // 1 - Slider
+        // 3 - Spinner
+        // 7 - o!m hold
         String[] split = line.split(",");
         String key = split[3];
 
@@ -157,6 +170,7 @@ public class BeatmapWrapper {
     }
 
     private <T> void parseSection(T properties, Class<T> tClass, String key, String value) throws ReflectiveOperationException{
+        // Get the setter for the field using Reflection and set it to the parsed value
         String setterName = "set" + key;
         Class<?> parameterType = null;
         Method setter = null;
@@ -168,6 +182,8 @@ public class BeatmapWrapper {
             }
         }
 
+        // If the setter is null, we either have a bug in the parser of the beatmap file has an invalid line
+        // TODO: Add custom exceptions
         if (setter == null) {
             throw new ReflectiveOperationException();
         }
@@ -175,6 +191,8 @@ public class BeatmapWrapper {
         setter.invoke(properties, parsers.get(parameterType).apply(value));
     }
 
+//    This map contains a parser, that allows you get any beatmap property from a string that represents it
+//    in the beatmap file
     private static final Map<Class<?>, Function<String, ?>> parsers = new HashMap<>();
 
     static {
