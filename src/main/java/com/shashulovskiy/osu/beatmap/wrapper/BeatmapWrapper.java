@@ -17,44 +17,46 @@ import com.shashulovskiy.osu.beatmap.model.timingpoints.TimingPoints;
 
 import java.io.*;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class BeatmapWrapper {
 
     Beatmap beatmap = new Beatmap();
 
-    public BeatmapWrapper(String path) {
-        parseFile(new File(path));
+    public BeatmapWrapper(final String path) {
+        parseFile(Path.of(path));
     }
 
-    private void parseFile(File beatmapFile) {
+    private void parseFile(final Path beatmapFile) {
         beatmap = new Beatmap();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(beatmapFile))) {
-            parseSections(br);
-        } catch (Exception e) {
+        try (final Stream<String> lines = Files.lines(beatmapFile)) {
+            parseSections(lines);
+        } catch (final Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void parseSections(BufferedReader br) throws IOException {
-        String line;
-        String sectionName = "";
-        while ((line = br.readLine()) != null) {
+    private void parseSections(final Stream<String> lines) throws IOException {
+        final String[] sectionName = {""};
+        lines.forEach(line -> {
 //            Every section starts with "[SECTION_NAME]"
 //            Remember the the current section, which is being parsed and set fields accordingly
             if (line.startsWith("[")) {
-                sectionName = line.trim().substring(1, line.length() - 1);
+                sectionName[0] = line.trim().substring(1, line.length() - 1);
             } else {
                 // Comments and empty lines are ignored
-                if (!sectionName.equals("") && !line.isEmpty() && !line.startsWith("//")) parseSection(sectionName, line);
+                if (!sectionName[0].equals("") && !line.isEmpty() && !line.startsWith("//")) parseSection(sectionName[0], line);
             }
-        }
+        });
     }
 
-    private void parseSection(String sectionName, String line) {
+    private void parseSection(final String sectionName, final String line) {
         try {
             switch (sectionName) {
                 case "General":
@@ -82,33 +84,33 @@ public class BeatmapWrapper {
                     parseHitObjects(line);
                     break;
             }
-        } catch (ReflectiveOperationException e) {
+        } catch (final ReflectiveOperationException e) {
             System.err.printf("Unable to parse \"%s\", at section name %s%n", line, sectionName);
         }
     }
 
-    private void parseGeneral(String line) throws ReflectiveOperationException {
+    private void parseGeneral(final String line) throws ReflectiveOperationException {
         parseKeyValuePair(line, beatmap.getGeneralProperties(), General.class);
     }
 
-    private void parseEditor(String line) throws ReflectiveOperationException {
+    private void parseEditor(final String line) throws ReflectiveOperationException {
         parseKeyValuePair(line, beatmap.getEditorProperties(), Editor.class);
     }
 
-    private void parseMetadata(String line) throws ReflectiveOperationException {
+    private void parseMetadata(final String line) throws ReflectiveOperationException {
         parseKeyValuePair(line, beatmap.getMetadataProperties(), Metadata.class);
     }
 
-    private void parseDifficulty(String line) throws ReflectiveOperationException {
+    private void parseDifficulty(final String line) throws ReflectiveOperationException {
         parseKeyValuePair(line, beatmap.getDifficultyProperties(), Difficulty.class);
     }
 
-    private void parseEvents(String line) throws ReflectiveOperationException {
+    private void parseEvents(final String line) throws ReflectiveOperationException {
         // Event type is given by the first number in a comma-separated list
         // Take that out and parse the rest of the list with an according parser
-        int index = line.indexOf(",");
+        final int index = line.indexOf(",");
         String key = line.substring(0, index);
-        String value = line.substring(index + 1);
+        final String value = line.substring(index + 1);
 
         if (key.equals("0")) key = "Background";
         if (key.equals("1")) key = "Video";
@@ -117,11 +119,11 @@ public class BeatmapWrapper {
         parseSection(beatmap.getEvents(), Events.class, key, value);
     }
 
-    private void parseTimingPoints(String line) throws ReflectiveOperationException {
+    private void parseTimingPoints(final String line) throws ReflectiveOperationException {
         parseSection(beatmap.getTimingPoints(), TimingPoints.class, "TimingPoint", line);
     }
 
-    private void parseColours(String line) throws ReflectiveOperationException {
+    private void parseColours(final String line) throws ReflectiveOperationException {
         // Colours section contains either one of the combo colours or
         // SliderTrackOverride/SliderBorder values in key: value format,
         // which have their own parsers
@@ -132,16 +134,16 @@ public class BeatmapWrapper {
         }
     }
 
-    private void parseHitObjects(String line) throws ReflectiveOperationException {
+    private void parseHitObjects(final String line) throws ReflectiveOperationException {
         // Hit onject type is given by one of the bytes in the type integer value
         // 0 - HitCircle
         // 1 - Slider
         // 3 - Spinner
         // 7 - o!m hold
-        String[] split = line.split(",");
+        final String[] split = line.split(",");
         String key = split[3];
 
-        int type = Integer.parseInt(key);
+        final int type = Integer.parseInt(key);
         if ((type & (1 << 0)) != 0) {
             key = "HitCircle";
         }
@@ -161,20 +163,20 @@ public class BeatmapWrapper {
         parseSection(beatmap.getHitObjects(), HitObjects.class, key, line);
     }
 
-    private <T> void parseKeyValuePair(String line, T properties, Class<T> tClass) throws ReflectiveOperationException {
-        String[] split = line.split(":");
-        String key = split[0].trim();
-        String value = split[1].trim();
+    private <T> void parseKeyValuePair(final String line, final T properties, final Class<T> tClass) throws ReflectiveOperationException {
+        final String[] split = line.split(":");
+        final String key = split[0].trim();
+        final String value = split[1].trim();
 
         parseSection(properties, tClass, key, value);
     }
 
-    private <T> void parseSection(T properties, Class<T> tClass, String key, String value) throws ReflectiveOperationException{
+    private <T> void parseSection(final T properties, final Class<T> tClass, final String key, final String value) throws ReflectiveOperationException{
         // Get the setter for the field using Reflection and set it to the parsed value
-        String setterName = "set" + key;
+        final String setterName = "set" + key;
         Class<?> parameterType = null;
         Method setter = null;
-        for (Method method : tClass.getDeclaredMethods()) {
+        for (final Method method : tClass.getDeclaredMethods()) {
             if (method.getName().equals(setterName)) {
                 parameterType = method.getParameterTypes()[0];
                 setter = method;
